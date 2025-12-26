@@ -41,18 +41,17 @@
         #error-display {
             display: none;
             margin-top: 1.5rem;
-            padding: 1rem;
-            background: #fef2f2;
+            padding: 1.5rem;
+            background: #fff1f2;
             border: 1px solid #fecaca;
-            color: #b91c1c;
+            color: #991b1b;
             border-radius: 0.75rem;
-            font-size: 0.75rem;
+            font-size: 0.8125rem;
             max-width: 90%;
-            text-align: left;
-            font-family: monospace;
-            white-space: pre-wrap;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             word-break: break-all;
         }
+        code { background: #fee2e2; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; }
     </style>
     
     <script type="importmap">
@@ -73,71 +72,58 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">女王接龙助手启动中...</p>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">正在启动接龙助手...</p>
         <div id="error-display"></div>
     </div>
     <div id="root"></div>
 
-    <!-- 显式引入应用入口模块 -->
-    <script type="module" src="index.tsx"></script>
-
     <script>
-      // 全局隐藏加载器的函数，供 index.tsx 调用
+      // 1. 注入 process 垫片
+      window.process = { env: { API_KEY: "" } };
+
+      // 2. 定义全局加载器控制函数
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
               loader.style.opacity = '0';
-              setTimeout(() => {
-                  loader.style.display = 'none';
-              }, 500);
+              setTimeout(() => { loader.style.display = 'none'; }, 500);
           }
       };
 
-      // 全局错误捕获，避免白屏无响应
+      // 3. 强化错误捕获显示
       window.addEventListener('error', function(e) {
-          const errorDisplay = document.getElementById('error-display');
-          if (errorDisplay) {
-              errorDisplay.style.display = 'block';
-              if (e.message && e.message.includes('MIME type')) {
-                  errorDisplay.innerHTML = `<strong>加载失败:</strong> 当前环境无法直接解析 .tsx 模块。请确认服务器配置。`;
-              } else {
-                  errorDisplay.innerHTML = `<strong>异常信息:</strong><br>${e.message || '未知错误'}`;
-              }
-          }
+          const display = document.getElementById('error-display');
+          if (!display) return;
+          
+          display.style.display = 'block';
+          // 修复：确保 e.message 存在，避免调用 includes 时抛出 TypeError
+          const rawMessage = e.message || "";
+          const filename = e.filename || "";
+          
+          const isModuleError = rawMessage.includes('MIME') || rawMessage.includes('import');
+          
+          display.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 0.5rem;">🚨 运行时异常</div>
+            <div style="margin-bottom: 0.5rem;">${rawMessage || '资源加载失败或未捕获的异常'}</div>
+            <div style="font-size: 0.75rem; opacity: 0.8;">
+                ${filename ? '文件: ' + filename : '建议：请检查控制台获取详细堆栈信息。'}
+            </div>
+          `;
       }, true);
 
-      // 注册 ServiceWorker
+      // 4. 安全注册 Service Worker
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          // 仅在安全上下文且非沙盒环境下注册
-          const isSecure = window.location.protocol === 'https:' || 
-                           window.location.hostname === 'localhost' || 
-                           window.location.hostname === '127.0.0.1';
-          
-          if (isSecure) {
-            // 直接使用相对路径，避免复杂的 URL 构造错误
-            navigator.serviceWorker.register('sw.js')
-              .then(reg => console.log('ServiceWorker 注册成功'))
-              .catch(err => {
-                // 仅在控制台警告，不中断主流程
-                console.warn('ServiceWorker 注册失败（可能是由于 Origin 限制）:', err);
-              });
-          }
-        });
+          window.addEventListener('load', () => {
+              const swPath = './sw.js';
+              navigator.serviceWorker.register(swPath)
+                  .then(reg => console.log('SW Registered'))
+                  .catch(err => console.warn('SW Register Skip:', err.message));
+          });
       }
-
-      // 保底逻辑：如果 12 秒后页面依然没渲染出 React 组件，显示超时提醒
-      setTimeout(() => {
-          const root = document.getElementById('root');
-          if (root && root.children.length === 0) {
-              const errorDisplay = document.getElementById('error-display');
-              if (errorDisplay && errorDisplay.style.display !== 'block') {
-                errorDisplay.style.display = 'block';
-                errorDisplay.innerText = '加载超时。请检查网络连接或尝试在 Chrome 浏览器中访问。';
-              }
-          }
-      }, 12000);
     </script>
+
+    <!-- 5. 显式启动应用 -->
+    <script type="module" src="index.tsx"></script>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>
