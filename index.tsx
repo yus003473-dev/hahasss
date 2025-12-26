@@ -4,17 +4,28 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
-if (!rootElement) {
-  throw new Error("Could not find root element to mount to");
+if (rootElement) {
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+    
+    // 渲染完成后，移除 HTML 里的 loader
+    if (typeof (window as any).hideAppLoader === 'function') {
+      (window as any).hideAppLoader();
+    } else {
+      const loader = document.getElementById('app-loader');
+      if (loader) loader.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('React Root Render Error:', error);
+    const errorDisplay = document.getElementById('error-display');
+    if (errorDisplay) {
+      errorDisplay.style.display = 'block';
+      errorDisplay.innerText = '渲染异常: ' + (error instanceof Error ? error.message : String(error));
+    }
+  }
 }
-
-const root = ReactDOM.createRoot(rootElement);
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
-
-// 移除 loader 的辅助逻辑
-const loader = document.getElementById('app-loader');
-if (loader) loader.style.display = 'none';

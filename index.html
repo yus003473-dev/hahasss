@@ -11,20 +11,10 @@
     <meta name="theme-color" content="#4f46e5">
     <style>
         body { font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-        .row-edit-enter { opacity: 0; transform: translateY(-10px); }
-        .row-edit-enter-active { opacity: 1; transform: translateY(0); transition: all 300ms ease-out; }
-        
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white; padding: 0; margin: 0; }
-            .print-card { 
-                page-break-inside: avoid; 
-                border: 1px solid #eee; 
-                margin-bottom: 1rem; 
-                padding: 1rem;
-                border-radius: 0;
-            }
         }
         .print-only { display: none; }
 
@@ -37,6 +27,7 @@
             justify-content: center;
             background: #f8fafc;
             z-index: 9999;
+            transition: opacity 0.5s ease-out;
         }
         .spinner {
             width: 40px;
@@ -47,15 +38,33 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        #error-display {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+            max-width: 90%;
+            text-align: left;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
     </style>
-<script type="importmap">
+    
+    <script type="importmap">
 {
   "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
+    "@google/genai": "https://esm.sh/@google/genai@1.34.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
@@ -64,42 +73,70 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 500;">正在加载接龙助手...</p>
-        <div id="error-display" style="display: none; margin-top: 1rem; color: #ef4444; font-size: 0.75rem; max-width: 80%; text-align: center; font-family: monospace;"></div>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">女王接龙助手启动中...</p>
+        <div id="error-display"></div>
     </div>
     <div id="root"></div>
 
-    <script type="module">
-        // 捕获脚本加载错误
-        window.addEventListener('error', (e) => {
-            if (e.message.includes('MIME type')) {
-                const display = document.getElementById('error-display');
-                display.style.display = 'block';
-                display.innerText = '加载失败: 浏览器无法直接运行 .tsx 文件。请确保通过正确的部署流程发布。';
-            }
-        }, true);
-    </script>
-
-    <!-- 显式引入入口文件 -->
+    <!-- 显式引入应用入口模块 -->
     <script type="module" src="index.tsx"></script>
-    
+
     <script>
+      // 全局隐藏加载器的函数，供 index.tsx 调用
+      window.hideAppLoader = () => {
+          const loader = document.getElementById('app-loader');
+          if (loader) {
+              loader.style.opacity = '0';
+              setTimeout(() => {
+                  loader.style.display = 'none';
+              }, 500);
+          }
+      };
+
+      // 全局错误捕获，避免白屏无响应
+      window.addEventListener('error', function(e) {
+          const errorDisplay = document.getElementById('error-display');
+          if (errorDisplay) {
+              errorDisplay.style.display = 'block';
+              if (e.message && e.message.includes('MIME type')) {
+                  errorDisplay.innerHTML = `<strong>加载失败:</strong> 当前环境无法直接解析 .tsx 模块。请确认服务器配置。`;
+              } else {
+                  errorDisplay.innerHTML = `<strong>异常信息:</strong><br>${e.message || '未知错误'}`;
+              }
+          }
+      }, true);
+
+      // 注册 ServiceWorker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.log('SW registration failed: ', err));
+          // 仅在安全上下文且非沙盒环境下注册
+          const isSecure = window.location.protocol === 'https:' || 
+                           window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+          
+          if (isSecure) {
+            // 直接使用相对路径，避免复杂的 URL 构造错误
+            navigator.serviceWorker.register('sw.js')
+              .then(reg => console.log('ServiceWorker 注册成功'))
+              .catch(err => {
+                // 仅在控制台警告，不中断主流程
+                console.warn('ServiceWorker 注册失败（可能是由于 Origin 限制）:', err);
+              });
+          }
         });
       }
-      // 成功加载后移除 loader
-      window.addEventListener('DOMContentLoaded', () => {
-          setTimeout(() => {
-              const loader = document.getElementById('app-loader');
-              if (loader && window.React) { // 简单检查 React 是否可用
-                  loader.style.display = 'none';
+
+      // 保底逻辑：如果 12 秒后页面依然没渲染出 React 组件，显示超时提醒
+      setTimeout(() => {
+          const root = document.getElementById('root');
+          if (root && root.children.length === 0) {
+              const errorDisplay = document.getElementById('error-display');
+              if (errorDisplay && errorDisplay.style.display !== 'block') {
+                errorDisplay.style.display = 'block';
+                errorDisplay.innerText = '加载超时。请检查网络连接或尝试在 Chrome 浏览器中访问。';
               }
-          }, 1000);
-      });
+          }
+      }, 12000);
     </script>
 <script type="module" src="/index.tsx"></script>
 </body>
