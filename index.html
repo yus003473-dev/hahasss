@@ -9,6 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#4f46e5">
+    
+    <!-- Babel Standalone: 允许浏览器直接运行 TSX 代码 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
         body { font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
         @media print {
@@ -51,7 +55,7 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             word-break: break-all;
         }
-        .err-title { font-weight: 800; color: #b91c1c; margin-bottom: 0.5rem; display: flex; items-center; gap: 0.5rem; }
+        .err-title { font-weight: 800; color: #b91c1c; margin-bottom: 0.5rem; }
         .err-stack { margin-top: 0.75rem; font-family: monospace; font-size: 0.7rem; background: #fee2e2; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; white-space: pre-wrap; }
     </style>
     
@@ -73,13 +77,15 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">正在加载助手...</p>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">正在启动女王接龙助手...</p>
         <div id="error-display"></div>
     </div>
     <div id="root"></div>
 
     <script>
+      // 注入基础环境
       window.process = { env: { API_KEY: "" } };
+      
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
@@ -88,44 +94,45 @@
           }
       };
 
-      // 捕获所有类型的错误：包括脚本加载失败和代码运行时异常
+      // 强化错误处理
       function handleError(msg, url, line, col, error) {
           const display = document.getElementById('error-display');
           if (!display) return;
           display.style.display = 'block';
-          
-          let message = msg || "加载过程中发生异常";
-          let stack = "";
-          
-          if (error && error.stack) {
-              stack = error.stack;
-              message = error.message;
-          } else if (typeof msg === 'object' && msg.type === 'error') {
-              message = "资源文件加载失败，请检查网络或刷新重试。";
-          }
-
+          let message = error?.message || msg || "未知运行时错误";
+          let stack = error?.stack || "";
           display.innerHTML = `
-            <div class="err-title">🚨 启动或运行错误</div>
+            <div class="err-title">🚨 启动故障</div>
             <div style="line-height: 1.4;">${message}</div>
-            ${url ? `<div style="font-size:0.7rem; opacity:0.7; margin-top:0.25rem;">位置: ${url}:${line}</div>` : ''}
+            ${url ? `<div style="font-size:0.7rem; opacity:0.7; margin-top:0.25rem;">文件: ${url.split('/').pop()}:${line}</div>` : ''}
             ${stack ? `<div class="err-stack">${stack}</div>` : ''}
           `;
           return false;
       }
 
       window.onerror = handleError;
-      window.addEventListener('unhandledrejection', (event) => {
-          handleError("异步任务异常: " + (event.reason ? event.reason.message : "未知原因"), null, null, null, event.reason);
+      window.onunhandledrejection = (e) => handleError(e.reason?.message || "异步任务失败", null, null, null, e.reason);
+
+      // 配置 Babel 预设：支持 TSX 和最新 React 语法
+      Babel.registerPreset("app-preset", {
+        presets: [
+          [Babel.availablePresets["typescript"], { allExtensions: true, isTSX: true }],
+          [Babel.availablePresets["react"], { runtime: "automatic" }]
+        ]
       });
-      // 捕获静态资源加载错误
-      window.addEventListener('error', (e) => {
-          if (e.target && (e.target.src || e.target.href)) {
-              handleError(`资源加载失败: ${e.target.src || e.target.href}`);
-          }
-      }, true);
     </script>
 
-    <script type="module" src="index.tsx"></script>
+    <!-- 使用 Babel 实时转译 index.tsx -->
+    <script type="text/babel" data-type="module" data-presets="app-preset" src="index.tsx"></script>
+
+    <script>
+      // 暂时注销 SW 以排除干扰
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for(let reg of regs) reg.unregister();
+        });
+      }
+    </script>
 <script type="module" src="/index.tsx"></script>
 </body>
 </html>
