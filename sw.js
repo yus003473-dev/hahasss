@@ -1,9 +1,11 @@
 
-const CACHE_NAME = 'queen-helper-v4';
+const CACHE_NAME = 'queen-helper-v5';
 const CORE_ASSETS = [
   'index.html',
   'manifest.json',
   'index.tsx',
+  'App.tsx',
+  'types.ts',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
@@ -12,7 +14,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // 这里的资源会自动相对于 sw.js 的位置进行获取
       return cache.addAll(CORE_ASSETS);
     })
   );

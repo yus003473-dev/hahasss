@@ -27,6 +27,26 @@
             }
         }
         .print-only { display: none; }
+
+        #app-loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 <script type="importmap">
 {
@@ -42,18 +62,44 @@
 <link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50 text-slate-900">
+    <div id="app-loader">
+        <div class="spinner"></div>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 500;">正在加载接龙助手...</p>
+        <div id="error-display" style="display: none; margin-top: 1rem; color: #ef4444; font-size: 0.75rem; max-width: 80%; text-align: center; font-family: monospace;"></div>
+    </div>
     <div id="root"></div>
-    <!-- 显式引入入口文件，确保浏览器识别模块逻辑 -->
+
+    <script type="module">
+        // 捕获脚本加载错误
+        window.addEventListener('error', (e) => {
+            if (e.message.includes('MIME type')) {
+                const display = document.getElementById('error-display');
+                display.style.display = 'block';
+                display.innerText = '加载失败: 浏览器无法直接运行 .tsx 文件。请确保通过正确的部署流程发布。';
+            }
+        }, true);
+    </script>
+
+    <!-- 显式引入入口文件 -->
     <script type="module" src="index.tsx"></script>
+    
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // 确保在子目录下也能正确注册
           navigator.serviceWorker.register('./sw.js')
             .then(reg => console.log('SW registered'))
             .catch(err => console.log('SW registration failed: ', err));
         });
       }
+      // 成功加载后移除 loader
+      window.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+              const loader = document.getElementById('app-loader');
+              if (loader && window.React) { // 简单检查 React 是否可用
+                  loader.style.display = 'none';
+              }
+          }, 1000);
+      });
     </script>
 <script type="module" src="/index.tsx"></script>
 </body>

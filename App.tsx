@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Product, Customer, Order, ActionLog, AppBackup } from './types';
-import { ProductManager } from './components/ProductManager';
-import { OrderManager } from './components/OrderManager';
-import { CustomerManager } from './components/CustomerManager';
+import { Product, Customer, Order, ActionLog, AppBackup } from './types.ts';
+import { ProductManager } from './components/ProductManager.tsx';
+import { OrderManager } from './components/OrderManager.tsx';
+import { CustomerManager } from './components/CustomerManager.tsx';
 import { 
   LayoutDashboard, ShoppingBag, Users, Monitor, HardDrive, 
   DownloadCloud, Save, Upload, RefreshCw, ShieldCheck
 } from 'lucide-react';
 
-const APP_VERSION = "2.5.0-OfflineReady";
+const APP_VERSION = "2.5.1-Patched";
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers'>('orders');

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import App from './App.tsx';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -14,3 +14,7 @@ root.render(
     <App />
   </React.StrictMode>
 );
+
+// 移除 loader 的辅助逻辑
+const loader = document.getElementById('app-loader');
+if (loader) loader.style.display = 'none';
