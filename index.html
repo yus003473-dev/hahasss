@@ -73,20 +73,19 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
-        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">应用启动中...</p>
+        <p style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">正在加载接龙助手...</p>
         <div id="error-display"></div>
     </div>
     <div id="root"></div>
 
     <script>
-      // 注入基础环境
+      // 初始化全局环境
       window.process = { env: { API_KEY: "" } };
-      
-      // 全局状态跟踪
-      window.__APP_STARTED__ = false;
+      window.__APP_LOADED__ = false;
 
+      // 隐藏加载器函数
       window.hideAppLoader = () => {
-          window.__APP_STARTED__ = true;
+          window.__APP_LOADED__ = true;
           const loader = document.getElementById('app-loader');
           if (loader) {
               loader.style.opacity = '0';
@@ -94,31 +93,40 @@
           }
       };
 
-      // 强化错误处理
-      function handleError(msg, url, line, col, error) {
+      // 错误显示函数
+      window.showError = (title, message) => {
           const display = document.getElementById('error-display');
           if (!display) return;
           display.style.display = 'block';
-          const message = error?.message || msg || "未知运行时错误";
           display.innerHTML = `
-            <div class="err-title">🚨 启动中断</div>
+            <div class="err-title">🚨 ${title}</div>
             <div style="line-height: 1.4;">${message}</div>
-            <div style="font-size:0.7rem; opacity:0.7; margin-top:0.75rem;">
-                建议：请按 F12 检查控制台网络请求。若出现 .tsx 404 错误，请确保环境支持自动转译或尝试刷新。
-            </div>
           `;
+      };
+
+      // 全局运行时错误捕获
+      window.onerror = (msg, url, line, col, error) => {
+          window.showError("运行时错误", error?.message || msg);
           return false;
-      }
+      };
 
-      window.onerror = handleError;
-      window.onunhandledrejection = (e) => handleError(e.reason?.message || "异步操作失败", null, null, null, e.reason);
+      window.onunhandledrejection = (e) => {
+          window.showError("异步错误", e.reason?.message || "Promise rejected");
+      };
 
-      // 启动超时自动检测：6秒后如果还没启动，则提示错误
+      // 关键资源加载失败捕获
+      window.addEventListener('error', (e) => {
+          if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+              window.showError("资源加载失败", "无法读取组件库，请检查网络或代理设置。");
+          }
+      }, true);
+
+      // 设置最终保险：如果 10 秒内没有加载成功，提供排查建议
       setTimeout(() => {
-        if (!window.__APP_STARTED__) {
-            handleError("应用加载超时。这通常是由于网络连接缓慢或环境不支持 TSX 原生加载导致的。");
-        }
-      }, 6000);
+          if (!window.__APP_LOADED__) {
+              window.showError("加载超时", "应用启动时间过长。可能原因：<br/>1. 当前网络无法访问 esm.sh CDN<br/>2. 浏览器环境不支持直接运行 .tsx (如 GitHub Pages 需要构建步骤)<br/>3. 控制台存在 MIME 类型报错");
+          }
+      }, 10000);
     </script>
 <script type="module" src="/index.tsx"></script>
 </body>
