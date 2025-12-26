@@ -11,12 +11,6 @@
     <meta name="theme-color" content="#4f46e5">
     <style>
         body { font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white; padding: 0; margin: 0; }
-        }
-        .print-only { display: none; }
         #app-loader {
             position: fixed;
             inset: 0;
@@ -38,15 +32,27 @@
         }
         #error-display {
             display: none;
-            margin-top: 1rem;
-            color: #ef4444;
-            font-size: 0.875rem;
-            max-width: 80%;
+            margin-top: 1.5rem;
+            max-width: 320px;
             text-align: center;
+        }
+        .error-card {
             background: #fee2e2;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
+            padding: 1rem;
+            border-radius: 0.75rem;
             border: 1px solid #fecaca;
+            color: #b91c1c;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+        .retry-btn {
+            background: #4f46e5;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -63,22 +69,24 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
         <p id="loader-text" style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">女王正在准备中...</p>
-        <div id="error-display"></div>
+        <div id="error-display">
+            <div id="error-msg" class="error-card"></div>
+            <button class="retry-btn" onclick="location.reload(true)">强制刷新重试</button>
+        </div>
     </div>
     
     <div id="root"></div>
 
     <script>
-      // 1. 初始化环境变量
+      // 1. 初始化环境变量模拟（防止库报错）
       window.process = { env: { API_KEY: "" } };
       
-      // 2. 隐藏加载器
+      // 2. 隐藏加载器函数
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
@@ -87,35 +95,41 @@
           }
       };
 
-      // 3. 错误展示
-      window.showError = (title, msg) => {
+      // 3. 错误展示函数
+      window.showError = (msg) => {
           const display = document.getElementById('error-display');
+          const msgEl = document.getElementById('error-msg');
           const text = document.getElementById('loader-text');
-          if (display) {
+          if (display && msgEl) {
               text.style.display = 'none';
               display.style.display = 'block';
-              display.innerHTML = `<strong>${title}</strong><br/>${msg}`;
+              msgEl.innerText = msg;
           }
       };
 
-      // 4. 全局错误捕获
+      // 4. 全局捕捉渲染前的错误
       window.addEventListener('error', function(e) {
-          console.error('Runtime Error:', e);
-          window.showError('加载出错', e.message);
+          console.error('Loader caught:', e);
+          if (e.message.includes('import')) {
+            window.showError('模块加载冲突，请点击下方刷新。');
+          } else {
+            window.showError('加载失败: ' + e.message);
+          }
       });
 
-      // 5. 超时保护
+      // 5. 超时自动显现按钮（防止白屏死锁）
       setTimeout(() => {
           const loader = document.getElementById('app-loader');
           if (loader && loader.style.display !== 'none') {
-              console.warn('Load timeout - potential path issue');
-              window.hideAppLoader(); 
+              const display = document.getElementById('error-display');
+              if (display && display.style.display === 'none') {
+                  window.showError('连接超时，可能是由于 GitHub Pages 缓存了旧版本。');
+              }
           }
-      }, 10000);
+      }, 8000);
     </script>
 
-    <!-- 注意：去掉了 src 前面的 / 符号，使用相对路径 -->
-    <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+    <!-- Vite 入口点，必须使用相对于根目录的路径 -->
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

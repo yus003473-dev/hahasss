@@ -3,6 +3,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
+// 注册 Service Worker (PWA 支持)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/hahasss/sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
 const rootElement = document.getElementById('root');
 
 if (rootElement) {
@@ -22,18 +31,16 @@ if (rootElement) {
       }
     };
 
-    // 尝试多次确保隐藏
+    // 多重保证隐藏
     cleanup();
-    setTimeout(cleanup, 100);
+    setTimeout(cleanup, 200);
     requestAnimationFrame(cleanup);
     
   } catch (error) {
     console.error('React Root Error:', error);
     const errorFn = (window as any).showError;
     if (typeof errorFn === 'function') {
-      errorFn('渲染失败', error instanceof Error ? error.message : String(error));
+      errorFn(error instanceof Error ? error.message : '渲染过程中发生未知错误');
     }
   }
-} else {
-    console.error('Root element not found');
 }

@@ -4,12 +4,23 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // GitHub Pages 部署在子路径，必须匹配仓库名
+  // 必须与 GitHub 仓库名一致
   base: '/hahasss/', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
     minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'lucide-react']
+        }
+      }
+    }
+  },
+  server: {
+    port: 3000,
+    open: true
   }
 });
