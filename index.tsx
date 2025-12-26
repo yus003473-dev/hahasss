@@ -3,17 +3,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// 渲染启动前即刻清理加载器（防御性调用）
-const hideLoader = () => {
-  if (typeof (window as any).hideAppLoader === 'function') {
-    (window as any).hideAppLoader();
-  }
-};
-
-// 注册 Service Worker (仅在生产环境)
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// 注册 Service Worker，使用相对路径
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // 使用相对路径以适配子目录部署
     navigator.serviceWorker.register('./sw.js').catch(err => {
       console.warn('SW registration failed:', err);
     });
@@ -31,13 +23,14 @@ if (rootElement) {
       </React.StrictMode>
     );
     
-    // 渲染完成后再次确保隐藏
-    setTimeout(hideLoader, 0);
-    
+    // 立即尝试隐藏加载器
+    if ((window as any).hideAppLoader) {
+      (window as any).hideAppLoader();
+    }
   } catch (error) {
-    console.error('React Root Error:', error);
-    if (typeof (window as any).showError === 'function') {
-      (window as any).showError(error instanceof Error ? error.message : '组件初始化失败');
+    console.error('渲染失败:', error);
+    if ((window as any).showError) {
+      (window as any).showError('启动失败，请检查浏览器版本或清理缓存');
     }
   }
 }

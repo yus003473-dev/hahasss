@@ -110,14 +110,13 @@
       // 监听全局未捕获错误
       window.addEventListener('error', function(e) {
           console.error('Runtime Error:', e);
-          // 如果加载不到 index.tsx，显示更友好的提示
           if (e.target && (e.target.src || '').includes('index.tsx')) {
-              window.showError('资源加载失败：找不到入口文件 index.tsx。请确保已通过 Vite 构建并部署。');
+              window.showError('资源加载失败：浏览器无法直接运行 TSX 文件。请确保 GitHub Actions 编译已成功完成。');
           }
       });
     </script>
 
-    <!-- 关键修复：使用相对路径 index.tsx，不带开头的斜杠 -->
-    <script type="module" src="index.tsx"></script>
+    <!-- 使用相对路径引用入口文件，去掉开头的斜杠 -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
