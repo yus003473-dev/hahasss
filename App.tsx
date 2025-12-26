@@ -9,7 +9,7 @@ import {
   DownloadCloud, Save, Upload, ShieldCheck
 } from 'lucide-react';
 
-const APP_VERSION = "2.6.0-Safe";
+const APP_VERSION = "2.6.1-DeployFix";
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers'>('orders');
