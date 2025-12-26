@@ -43,6 +43,10 @@
             font-size: 0.875rem;
             max-width: 80%;
             text-align: center;
+            background: #fee2e2;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #fecaca;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
@@ -64,17 +68,17 @@
 <body class="bg-slate-50 text-slate-900">
     <div id="app-loader">
         <div class="spinner"></div>
-        <p id="loader-text" style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">应用正在启动...</p>
+        <p id="loader-text" style="margin-top: 1rem; color: #64748b; font-size: 0.875rem; font-weight: 600;">女王正在准备中...</p>
         <div id="error-display"></div>
     </div>
     
     <div id="root"></div>
 
     <script>
-      // 1. 初始化环境变量占位
+      // 1. 初始化环境变量
       window.process = { env: { API_KEY: "" } };
       
-      // 2. 定义加载器隐藏函数
+      // 2. 隐藏加载器
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
@@ -83,30 +87,35 @@
           }
       };
 
-      // 3. 错误捕获：如果 JS 执行出错，显示具体原因
-      window.addEventListener('error', function(e) {
+      // 3. 错误展示
+      window.showError = (title, msg) => {
           const display = document.getElementById('error-display');
           const text = document.getElementById('loader-text');
           if (display) {
               text.style.display = 'none';
               display.style.display = 'block';
-              display.innerText = '启动失败: ' + e.message;
-              // 出错了也尝试在3秒后隐藏加载器，让用户能看到部分内容
-              setTimeout(window.hideAppLoader, 3000);
+              display.innerHTML = `<strong>${title}</strong><br/>${msg}`;
           }
+      };
+
+      // 4. 全局错误捕获
+      window.addEventListener('error', function(e) {
+          console.error('Runtime Error:', e);
+          window.showError('加载出错', e.message);
       });
 
-      // 4. 超时保护：如果 8 秒还没加载完，强制隐藏（可能是网络太慢或资源 404）
+      // 5. 超时保护
       setTimeout(() => {
           const loader = document.getElementById('app-loader');
           if (loader && loader.style.display !== 'none') {
-              console.warn('App load timeout - forcing loader hide');
-              window.hideAppLoader();
+              console.warn('Load timeout - potential path issue');
+              window.hideAppLoader(); 
           }
-      }, 8000);
+      }, 10000);
     </script>
 
-    <!-- Vite 构建入口：在生产环境 Vite 会将其替换为编译后的 JS -->
-    <script type="module" src="/index.tsx"></script>
+    <!-- 注意：去掉了 src 前面的 / 符号，使用相对路径 -->
+    <script type="module" src="index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>

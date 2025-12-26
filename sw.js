@@ -1,11 +1,8 @@
 
-const CACHE_NAME = 'queen-helper-v5';
+const CACHE_NAME = 'queen-helper-v6';
 const CORE_ASSETS = [
   'index.html',
   'manifest.json',
-  'index.tsx',
-  'App.tsx',
-  'types.ts',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
@@ -37,7 +34,7 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       
       return fetch(event.request).then(response => {
-        if (response.ok && (event.request.url.startsWith('http') || event.request.url.includes('esm.sh'))) {
+        if (response.ok && (event.request.url.startsWith('http'))) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         }
