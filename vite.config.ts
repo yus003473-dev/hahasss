@@ -4,8 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  // 必须与 GitHub 仓库名一致
-  base: '/hahasss/', 
+  base: './', // 使用相对路径，自适应任何仓库名
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
