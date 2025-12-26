@@ -83,10 +83,10 @@
     <div id="root"></div>
 
     <script>
-      // 1. 初始化环境变量模拟（防止库报错）
+      // 1. 基础环境模拟
       window.process = { env: { API_KEY: "" } };
       
-      // 2. 隐藏加载器函数
+      // 2. 隐藏加载器
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
@@ -95,7 +95,7 @@
           }
       };
 
-      // 3. 错误展示函数
+      // 3. 错误展示
       window.showError = (msg) => {
           const display = document.getElementById('error-display');
           const msgEl = document.getElementById('error-msg');
@@ -107,29 +107,18 @@
           }
       };
 
-      // 4. 全局捕捉渲染前的错误
+      // 4. 全局捕获
       window.addEventListener('error', function(e) {
-          console.error('Loader caught:', e);
-          if (e.message.includes('import')) {
-            window.showError('模块加载冲突，请点击下方刷新。');
+          console.error('App Error:', e);
+          if (e.message.includes('Script error')) {
+            window.showError('资源加载被拦截，请检查网络或刷新。');
           } else {
             window.showError('加载失败: ' + e.message);
           }
       });
-
-      // 5. 超时自动显现按钮（防止白屏死锁）
-      setTimeout(() => {
-          const loader = document.getElementById('app-loader');
-          if (loader && loader.style.display !== 'none') {
-              const display = document.getElementById('error-display');
-              if (display && display.style.display === 'none') {
-                  window.showError('连接超时，可能是由于 GitHub Pages 缓存了旧版本。');
-              }
-          }
-      }, 8000);
     </script>
 
-    <!-- Vite 入口点，必须使用相对于根目录的路径 -->
-    <script type="module" src="/index.tsx"></script>
+    <!-- 重要：去掉开头的斜杠，使用相对路径 -->
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>
