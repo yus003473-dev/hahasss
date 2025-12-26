@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>女王的接龙小助手</title>
+    <!-- 生产环境下 tailwind 警告可忽略，或使用脚本屏蔽 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
@@ -107,16 +108,16 @@
           }
       };
 
-      // 监听全局未捕获错误
+      // 监控资源加载错误
       window.addEventListener('error', function(e) {
-          console.error('Runtime Error:', e);
           if (e.target && (e.target.src || '').includes('index.tsx')) {
-              window.showError('资源加载失败：浏览器无法直接运行 TSX 文件。请确保 GitHub Actions 编译已成功完成。');
+              console.error('致命错误: 浏览器试图直接加载 .tsx 文件。这通常意味着 GitHub Pages 正在提供源码而非构建后的代码。');
+              window.showError('资源加载失败：请确保 GitHub Pages 设置为从 "gh-pages" 分支提供服务。');
           }
-      });
+      }, true);
     </script>
 
-    <!-- 使用相对路径引用入口文件，去掉开头的斜杠 -->
-    <script type="module" src="./index.tsx"></script>
+    <!-- 关键修复：去掉开头的斜杠，不使用 importmap -->
+    <script type="module" src="index.tsx"></script>
 </body>
 </html>

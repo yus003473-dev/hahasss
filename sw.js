@@ -1,6 +1,9 @@
 
-const CACHE_NAME = 'queen-helper-v6';
+const CACHE_NAME = 'queen-helper-v7';
+
+// 仅缓存核心 HTML 和外部 CDN 资源
 const CORE_ASSETS = [
+  './',
   'index.html',
   'manifest.json',
   'https://cdn.tailwindcss.com',
@@ -11,7 +14,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CORE_ASSETS);
+      return cache.addAll(CORE_ASSETS).catch(err => console.warn('部分核心资源缓存失败', err));
     })
   );
 });
@@ -34,7 +37,8 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
       
       return fetch(event.request).then(response => {
-        if (response.ok && (event.request.url.startsWith('http'))) {
+        // 只缓存成功的请求，且不缓存带有哈希的内部资源（由 Vite 自动管理更好）
+        if (response.ok && event.request.url.startsWith('http') && !event.request.url.includes('assets/')) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         }
