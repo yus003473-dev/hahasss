@@ -9,7 +9,7 @@ import {
   DownloadCloud, Save, Upload, RefreshCw, ShieldCheck
 } from 'lucide-react';
 
-const APP_VERSION = "2.5.1-Patched";
+const APP_VERSION = "2.5.2-Harden";
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'customers'>('orders');
@@ -21,14 +21,23 @@ const App: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 辅助函数：安全解析 JSON 数组
+  const safeParseArray = (key: string): any[] => {
+    try {
+      const item = localStorage.getItem(key);
+      if (!item) return [];
+      const parsed = JSON.parse(item);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.error(`解析 ${key} 失败:`, e);
+      return [];
+    }
+  };
+
   useEffect(() => {
-    const savedProducts = localStorage.getItem('psh_products');
-    const savedCustomers = localStorage.getItem('psh_customers');
-    const savedOrders = localStorage.getItem('psh_orders');
-    
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
-    if (savedCustomers) setCustomers(JSON.parse(savedCustomers));
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
+    setProducts(safeParseArray('psh_products'));
+    setCustomers(safeParseArray('psh_customers'));
+    setOrders(safeParseArray('psh_orders'));
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -37,15 +46,24 @@ const App: React.FC = () => {
     });
   }, []);
 
-  useEffect(() => localStorage.setItem('psh_products', JSON.stringify(products)), [products]);
-  useEffect(() => localStorage.setItem('psh_customers', JSON.stringify(customers)), [customers]);
-  useEffect(() => localStorage.setItem('psh_orders', JSON.stringify(orders)), [orders]);
+  // 保存时也增加冗余校验
+  useEffect(() => {
+    if (products) localStorage.setItem('psh_products', JSON.stringify(products));
+  }, [products]);
+  
+  useEffect(() => {
+    if (customers) localStorage.setItem('psh_customers', JSON.stringify(customers));
+  }, [customers]);
+  
+  useEffect(() => {
+    if (orders) localStorage.setItem('psh_orders', JSON.stringify(orders));
+  }, [orders]);
 
   const addLog = useCallback((message: string, type: ActionLog['type'] = 'INFO') => {
     setLogs(prev => [{
       id: Math.random().toString(36).substr(2, 9),
       timestamp: Date.now(),
-      message,
+      message: message || "无消息内容",
       type
     }, ...prev].slice(0, 50));
   }, []);
@@ -75,9 +93,9 @@ const App: React.FC = () => {
       try {
         const data = JSON.parse(event.target?.result as string);
         if (confirm("确定恢复备份吗？这将覆盖当前数据。")) {
-          setProducts(data.products || []);
-          setCustomers(data.customers || []);
-          setOrders(data.orders || []);
+          setProducts(Array.isArray(data.products) ? data.products : []);
+          setCustomers(Array.isArray(data.customers) ? data.customers : []);
+          setOrders(Array.isArray(data.orders) ? data.orders : []);
           addLog("本地数据恢复成功", "SUCCESS");
         }
       } catch (err) {
@@ -107,7 +125,7 @@ const App: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight">女王的接龙小助手</h1>
-            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">脱机运行就绪</p>
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">本地存储就绪</p>
           </div>
         </div>
 
@@ -155,7 +173,7 @@ const App: React.FC = () => {
             <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase mb-2">
               <ShieldCheck className="w-3 h-3 text-green-500" /> 数据存储安全
             </div>
-            <p className="text-[9px] text-slate-500 leading-tight italic">所有数据均保存在您的浏览器本地，不经过任何云端，隐私绝对安全。</p>
+            <p className="text-[9px] text-slate-500 leading-tight italic">所有数据仅存储在您的浏览器中。</p>
           </div>
         </div>
       </aside>
@@ -166,27 +184,27 @@ const App: React.FC = () => {
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
               {activeTab === 'orders' ? '订单处理中心' : activeTab === 'products' ? '商品与规格' : '客户地址簿'}
             </h2>
-            <p className="text-slate-500 text-sm mt-1">版本: {APP_VERSION} | 本地引擎就绪</p>
+            <p className="text-slate-500 text-sm mt-1">版本: {APP_VERSION}</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
              <HardDrive className="w-4 h-4 text-slate-400" />
-             <span className="text-[10px] font-bold text-slate-600 uppercase">LocalStorage Active</span>
+             <span className="text-[10px] font-bold text-slate-600 uppercase">LocalStorage</span>
           </div>
         </header>
 
         <div className="max-w-7xl mx-auto">
           {activeTab === 'orders' && (
             <OrderManager 
-              products={products} 
-              customers={customers} 
-              orders={orders} 
+              products={products || []} 
+              customers={customers || []} 
+              orders={orders || []} 
               setOrders={setOrders}
-              logs={logs}
+              logs={logs || []}
               addLog={addLog}
             />
           )}
-          {activeTab === 'products' && <ProductManager products={products} setProducts={setProducts} />}
-          {activeTab === 'customers' && <CustomerManager customers={customers} setCustomers={setCustomers} />}
+          {activeTab === 'products' && <ProductManager products={products || []} setProducts={setProducts} />}
+          {activeTab === 'customers' && <CustomerManager customers={customers || []} setCustomers={setCustomers} />}
         </div>
       </main>
     </div>
