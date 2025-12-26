@@ -83,10 +83,10 @@
     <div id="root"></div>
 
     <script>
-      // 1. 基础环境模拟
-      window.process = { env: { API_KEY: "" } };
+      // 1. 模拟环境，防止部分库因 process 未定义报错
+      window.process = { env: { NODE_ENV: "production", API_KEY: "" } };
       
-      // 2. 隐藏加载器
+      // 2. 隐藏加载器的全局函数
       window.hideAppLoader = () => {
           const loader = document.getElementById('app-loader');
           if (loader) {
@@ -95,30 +95,29 @@
           }
       };
 
-      // 3. 错误展示
+      // 3. 显示错误的全局函数
       window.showError = (msg) => {
           const display = document.getElementById('error-display');
           const msgEl = document.getElementById('error-msg');
           const text = document.getElementById('loader-text');
           if (display && msgEl) {
-              text.style.display = 'none';
+              if (text) text.style.display = 'none';
               display.style.display = 'block';
               msgEl.innerText = msg;
           }
       };
 
-      // 4. 全局捕获
+      // 监听全局未捕获错误
       window.addEventListener('error', function(e) {
-          console.error('App Error:', e);
-          if (e.message.includes('Script error')) {
-            window.showError('资源加载被拦截，请检查网络或刷新。');
-          } else {
-            window.showError('加载失败: ' + e.message);
+          console.error('Runtime Error:', e);
+          // 如果加载不到 index.tsx，显示更友好的提示
+          if (e.target && (e.target.src || '').includes('index.tsx')) {
+              window.showError('资源加载失败：找不到入口文件 index.tsx。请确保已通过 Vite 构建并部署。');
           }
       });
     </script>
 
-    <!-- 重要：去掉开头的斜杠，使用相对路径 -->
+    <!-- 关键修复：使用相对路径 index.tsx，不带开头的斜杠 -->
     <script type="module" src="index.tsx"></script>
 </body>
 </html>
